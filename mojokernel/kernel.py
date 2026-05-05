@@ -148,7 +148,11 @@ class MojoKernel(Kernel):
         result = self.engine.execute(code)
 
         if not silent and result.stdout: self.send_response(self.iopub_socket, 'stream', dict(name='stdout', text=result.stdout))
-        if not silent and result.stderr: self.send_response(self.iopub_socket, 'stream', dict(name='stderr', text=result.stderr))
+        # To avoid duplication with the current LLDB GetIOHandler, only
+        # stream stderr for successful executions. For errors, stderr is also
+        # used to build the traceback. This may change if the server later
+        # exposes a real execution status.
+        if not silent and result.stderr and result.success: self.send_response(self.iopub_socket, 'stream', dict(name='stderr', text=result.stderr))
 
         if result.success:
             if self.lsp: self._lsp_preamble += code + '\n'
